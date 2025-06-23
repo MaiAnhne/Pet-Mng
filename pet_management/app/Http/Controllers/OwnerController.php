@@ -2,63 +2,79 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Owner;
+use App\Models\Pet;
 use Illuminate\Http\Request;
 
 class OwnerController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        //
+        $owners = Owner::all();
+        return view('owners.index', compact('owners'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    
     public function create()
     {
-        //
+        return view('owners.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:owners',
+            'phone' => 'nullable',
+        ]);
+
+        Owner::create($data);
+        return redirect()->route('owners.index')->with('success', 'Owner created successfully!');
     }
 
-    /**
-     * Display the specified resource.
-     */
+    
     public function show(string $id)
     {
-        //
+        $owner = Owner::with('pets')->findOrFail($id);
+        return view('owners.show', compact('owner'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    
     public function edit(string $id)
     {
-        //
+        $owner = Owner::findOrFail($id);
+        return view('owners.edit', compact('owner'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    
     public function update(Request $request, string $id)
     {
-        //
+        $owner = Owner::findOrFail($id);
+
+        $data = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:owners,email,' . $owner->id,
+            'phone' => 'nullable',
+        ]);
+
+        $owner->update($data);
+        return redirect()->route('owners.index')->with('success', 'Owner updated successfully!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    
     public function destroy(string $id)
     {
-        //
+        $owner = Owner::findOrFail($id);
+        $owner->delete();
+        return redirect()->route('owners.index')->with('success', 'Owner deleted successfully!');
+    }
+
+    
+    public function assignPet(Request $request, Owner $owner, Pet $pet)
+    {
+        $owner->pets()->syncWithoutDetaching([$pet->id]);
+        return back()->with('success', 'Pet assigned to Owner!');
     }
 }
